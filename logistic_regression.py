@@ -28,8 +28,6 @@ y = cleaned_df['label']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=44, stratify=y)
 
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=44)
-
 # max_iter is a hyperparameter that sets the maximum number of optimization iterations allowed to adjust the model's weights and bias
 model = LogisticRegression(max_iter=1000)
 
@@ -67,3 +65,16 @@ probabilities = model.predict_proba(X_test_tfidf)[:, 1]
 auc_score = roc_auc_score(y_test, probabilities)
 
 print(f"ROC-AUC scores: {auc_score}")
+
+# Creates 5 stratified folds to maintain class proportions and evaluate the models consistency
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=44)
+
+# Ensures that TF-IDF is fitted separately on each training fold to prevent data leakage
+pipeline = Pipeline([("tfidf", TfidfVectorizer()), ("logistic_regression", LogisticRegression(max_iter=1000))])
+
+# Trains and validates the pipeline across 5 folds and returns an accuracy score for each
+cv_scores = cross_val_score(pipeline, X_train, y_train, cv= cv, scoring="accuracy")
+
+print(f"CV Accuracy Scores: {cv_scores}")
+print(f"Mean CV Accuracy: {cv_scores.mean()}")
+print(f"CV Standard Deviation: {cv_scores.std()}")
